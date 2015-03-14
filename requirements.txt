@@ -1,0 +1,2 @@
+python-redmine
+python-ldap
