@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Tkinter as tk
 # themed tk
 import ttk
@@ -17,6 +19,8 @@ import ldap.modlist as modlist
 import ldif
 
 from StringIO import StringIO
+#from inspect import getsourcefile
+#from os.path import abspath
 
 # for sending welcome emails
 import smtplib
@@ -139,8 +143,8 @@ def show_ldif():
 
 
 def copy_ldif(text_object):
-    resulted_ldif = text_object.get("1.0", ttk.END)
-    CL = ttk.ttk()
+    resulted_ldif = text_object.get("1.0", tk.END)
+    CL = tk.Tk()
     CL.withdraw()
     CL.clipboard_clear()
     CL.clipboard_append(resulted_ldif)
@@ -151,8 +155,8 @@ def yes_no(text_object, welcome_box_variable, redmine_box_variable,
            sn_variable, employeetype_variable, organization_variable,
            location_variable, email_variable, password_variable):
 
-    if ttkMessageBox.askyesno(title = 'Attention', 
-        message = 'Are you sure want to create new user on Webmail/Redmine?', icon = 'warning'):
+    if tkMessageBox.askyesno(title = 'Attention', 
+        message = 'Are you sure want to create new user on openLDAP/Redmine?', icon = 'warning'):
         import_to_ldap(text_object)
 
         # checkbox status
@@ -204,7 +208,7 @@ def sent_mail(personal_email, givenname_variable, email_variable,
 
 
 def import_to_ldap(text_object):
-    resulted_ldif = text_object.get("1.0", ttk.END)   
+    resulted_ldif = text_object.get("1.0", tk.END)   
     
     # Open a connection
     l = ldap.initialize(settings.ldap_server)
@@ -253,13 +257,16 @@ def random_password(N):
 root = tk.Tk()
 root.resizable(0,0)
 root.style = ttk.Style()
+# ('clam', 'alt', 'default', 'classic')
 root.style.theme_use("clam")
 
 # main window
 root.title("LDAP Adder")
 # app icon
-img = tk.PhotoImage(file='ldap_adder.gif')
-root.tk.call('wm', 'iconphoto', root._w, img)
+#icon = 'ldap_adder.gif'
+#path = str(abspath(getsourcefile(lambda _: None))) + icon
+#img = tk.PhotoImage(file=icon)
+#root.tk.call('wm', 'iconphoto', root._w, img)
 
 
 label(root, 0, 0, 'First name')

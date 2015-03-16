@@ -253,8 +253,8 @@ root.resizable(0,0)
 # main window
 root.title("LDAP Adder")
 # app icon
-img = tk.PhotoImage(file='ldap_adder.gif')
-root.tk.call('wm', 'iconphoto', root._w, img)
+#img = tk.PhotoImage(file='ldap_adder.gif')
+#root.tk.call('wm', 'iconphoto', root._w, img)
 
 
 label(root, 0, 0, 'First name')
