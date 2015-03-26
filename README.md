@@ -6,9 +6,11 @@ LDAP Adder Tool looks as follow:
 
 ![Output sample](https://github.com/ipeacocks/ldap_adder_tool/raw/master/demo.gif)
 
-Before using you should fill settings.py with your correct values.
+For Linux I use "Calm" theme of Tkinter:
 
-Also you need to have some python libs. Read about that in requirements.txt. Use next command to install all packs at once:
+![Output sample](https://github.com/ipeacocks/ldap_adder_tool/raw/master/demo-linux.gif)
+
+Before program launch you need to have some python libs. Read about that in requirements.txt. Use next command to install all packs at once:
 
 ```bash
 # pip install -r requirements.txt
