@@ -1,5 +1,9 @@
+#!/usr/bin/python
+
 import Tkinter as tk
 import tkMessageBox
+# themed tk
+# import ttk
 
 # for random password generation
 import random
@@ -24,24 +28,26 @@ from redmine import Redmine
 import warnings
 
 # setting: addresses, servers and so on
+# local file
 import settings
 
 
 def label(root, row, column, text):
-    L = tk.Label(root, text=text, anchor='w')
-    L.grid(row=row,column=column,sticky="nw",padx=3)
+    L = tk.Label(root, text=text, anchor='w',justify=tk.LEFT, width=16)
+    L.grid(row=row,column=column,sticky="nw",padx=4, pady=1)
+    return L
 
 
 def button(root, row, column, text, command, columnspan=1, sticky="e"):
-    B = tk.Button(root, text=text, command=command, width=20)
-    B.grid(row=row, column=column, sticky=sticky, pady=4, columnspan=columnspan, padx=4)
+    B = tk.Button(root, text=text, command=command, width=15)
+    B.grid(row=row, column=column, sticky=sticky, padx=8, pady=8, columnspan=columnspan)
 
 
-def entry(root, row, column, insert="", show=""):
-    E = tk.Entry(root, width=32)
+def entry(root, row, column, insert="", show="", width=37):
+    E = tk.Entry(root, width=width)
     E.insert(0, insert)
     E.config(show=show)
-    E.grid(row=row,column=column, padx=2)
+    E.grid(row=row,column=column, padx=4, pady=1)
     return E
 
 def check_box(root, row, column, text, variable, columnspan=1):
@@ -55,7 +61,7 @@ def text_field_w_scroll(root, width, height, text, row, column, column_scroll, c
     text_field.grid(row=row, column=column, columnspan=columnspan)
     scroll = tk.Scrollbar(root)
     scroll.config(command=text_field.yview)
-    scroll.grid(row=row, column=column_scroll, sticky="nes")
+    scroll.grid(row=row, column=column_scroll, sticky="nws")
     text_field.config(yscrollcommand=scroll.set)
     return text_field
 
@@ -115,17 +121,23 @@ def show_ldif():
 
     ldif = ''.join(ldif_list)
 
-    top = tk.Toplevel()
+    top = tk.Toplevel(root)
     top.title("Result")
     top.resizable(0,0)
+    top.focus_set()                                                        
+    top.grab_set()
 
-    ldif_text = text_field_w_scroll(top, 67, 27, ldif, 0, 0, 2, 2)
+    #logo = tk.PhotoImage(file="ldap_adder.gif")
+    top.tk.call('wm', 'iconphoto', top._w, logo)
+
+    #text_field_w_scroll(root, width, height, text, row, column, column_scroll, columnspan=1)
+    ldif_text = text_field_w_scroll(top, 57, 27, ldif, 0, 0, 2, 2)
 
     var13 = tk.IntVar()
     check_box(top, 2, 0, "Send welcome mail", var13)
-    var14 = entry(top, 2, 1, "example@mail.ru")
+    var14 = entry(top, 2, 1, "example@mail.ru", width=28)
     var15 = tk.IntVar()
-    check_box(top, 1, 0, "Create Redmine account", var15)
+    check_box(top, 1, 0, "Create Redmine account", var15, 2)
     label(top, 3, 0, '')
 
 
@@ -134,6 +146,7 @@ def show_ldif():
     button(top, 4, 1, "Import", lambda: yes_no(ldif_text, var13, 
            var15, var14, skype, cn, givenname, sn, employeetype,
            organization, location, email, password), columnspan=2)
+
 
 
 def copy_ldif(text_object):
@@ -150,7 +163,7 @@ def yes_no(text_object, welcome_box_variable, redmine_box_variable,
            location_variable, email_variable, password_variable):
 
     if tkMessageBox.askyesno(title = 'Attention', 
-        message = 'Are you sure want to create new user on Webmail/Redmine?', icon = 'warning'):
+        message = 'Are you sure want to create new user on OpenLDAP/Redmine?', icon = 'warning'):
         import_to_ldap(text_object)
 
         # checkbox status
@@ -172,6 +185,7 @@ def yes_no(text_object, welcome_box_variable, redmine_box_variable,
 
 def sent_mail(personal_email, givenname_variable, email_variable,
               password_variable, cn_variable):
+    reload(settings)
     sender = "Sysadmins Team"
     to = "Me"
     subject = "Your new mailbox"
@@ -183,7 +197,7 @@ def sent_mail(personal_email, givenname_variable, email_variable,
             "Here are your credentials for mailbox:\n\n"
             "login: %s\n"
             "password: %s\n"
-            "link https://roundcube.company.com for login.\n\n"
+            "link https://accounts.google.com for login.\n\n"
             "And this is your access to our issue tracking tool Redmine:\n\n"
             "login: %s\n"
             "password: %s\n"
@@ -202,6 +216,7 @@ def sent_mail(personal_email, givenname_variable, email_variable,
 
 
 def import_to_ldap(text_object):
+    reload(settings)
     resulted_ldif = text_object.get("1.0", tk.END)   
     
     # Open a connection
@@ -226,6 +241,7 @@ def create_redmine(cn_variable, password_variable, givenname_variable,
                    sn_variable, email_variable, skype_variable, employeetype_variable,
                    organization_variable, location_variable):
 
+    reload(settings)
     redmine = Redmine(settings.REDMINE_URL, key=settings.REDMINE_KEY, requests={'verify': False})
     warnings.filterwarnings("ignore")
 
@@ -248,14 +264,144 @@ def random_password(N):
     return password
 
 
+def about_window():
+    top2 = tk.Toplevel(root)
+    top2.title("About")
+    top2.resizable(0,0)
+    top2.focus_set()                                                        
+    top2.grab_set() 
+
+    #logo = tk.PhotoImage(file="ldap_adder.gif")
+    top2.tk.call('wm', 'iconphoto', top2._w, logo)
+
+    explanation = """This program is for easy creating accounts 
+for new users.
+
+It can create new users in OpenLDAP and 
+Redmine through API and uses Tkinter for 
+GUI, python-ldap and python-redmine libs"""
+    label = tk.Label(top2, image=logo)
+    label.image = logo # keep a reference!
+    label.grid(row=0,column=0, pady=4)
+
+    tk.Label(top2,justify=tk.LEFT,text=explanation).grid(row=0,column=1, padx=6)
+    tk.Button(top2,text='OK',width=10,command=top2.destroy).grid(row=1,column=0, columnspan=2, pady=8)
+
+    
+
+def settings_window():
+
+    reload(settings)
+
+    top3 = tk.Toplevel(root)
+    top3.title("Preferances")
+    top3.resizable(0,0)
+    
+    logo = tk.PhotoImage(file="settings.gif")
+    top3.tk.call('wm', 'iconphoto', top3._w, logo)
+
+    top3.focus_set()                                                        
+    top3.grab_set() 
+    
+    # Redmine
+    group1 = tk.LabelFrame(top3, text="Redmine", padx=5, pady=5)
+    group1.grid(row=0, column=0, padx=4, pady=4, sticky="we",columnspan=2)
+
+    label(group1, 0, 0, 'URL')
+    variable1 = entry(group1, 0, 1, settings.REDMINE_URL)
+
+    label(group1, 1, 0, 'API Key')
+    variable2 = entry(group1, 1, 1, settings.REDMINE_KEY)
+    #
+
+    # LDAP
+    group2 = tk.LabelFrame(top3, text="OpenLDAP", padx=5, pady=5)
+    group2.grid(row=2, column=0, padx=4, pady=4, sticky="we",columnspan=2)
+
+    label(group2, 2, 0, 'LDAP URL')
+    variable3 = entry(group2, 2, 1, settings.ldap_server)
+
+    label(group2, 3, 0, 'Root DN')
+    variable4 = entry(group2, 3, 1, settings.ldap_root_dn)
+
+    label(group2, 4, 0, 'Employee DN')
+    variable5 = entry(group2, 4, 1, settings.ldap_employees_dn)
+
+    label(group2, 5, 0, 'Password')
+    variable6 = entry(group2, 5, 1, settings.ldap_root_pw)
+    #
+
+    # SMTP
+    group3 = tk.LabelFrame(top3, text="SMTP", padx=5, pady=5)
+    group3.grid(row=6, column=0, padx=4, pady=4, sticky="we",columnspan=2)
+
+    label(group3, 6, 0, 'Server')
+    variable7 = entry(group3, 6, 1, settings.smtp_server)
+
+    label(group3, 7, 0, 'Port')
+    variable8 = entry(group3, 7, 1, settings.smtp_port)
+
+    label(group3, 8, 0, 'Mailbox')
+    variable9 = entry(group3, 8, 1, settings.admin_mailbox)
+
+    label(group3, 9, 0, 'Mailbox password')
+    variable10 = entry(group3, 9, 1, settings.admin_mailbox_pw)
+    #
+
+    # Mail domain 
+    group4 = tk.LabelFrame(top3, text="Mail domain", padx=5, pady=5)
+    group4.grid(row=10, column=0, padx=4, pady=4, sticky="we",columnspan=2)
+
+    label(group4, 10, 0, 'Mail domain')
+    variable11 = entry(group4, 10, 1, settings.mail_domain)  
+    #
+
+
+    label(top3, 11, 0, ' ')
+
+    #B.grid(row=row, column=column, sticky=sticky, padx=8, pady=8, columnspan=columnspan)
+
+    button(top3, 12, 0, 'Apply', lambda: save_settings(variable11.get(),variable1.get(),variable2.get(),
+                                        variable3.get(),variable4.get(),variable5.get(),variable6.get(),
+                                        variable7.get(),variable8.get(),variable9.get(),variable10.get()), sticky="w")
+    button(top3, 12, 1, 'Quit', top3.destroy)
+
+
+def save_settings(mail_domain, REDMINE_URL, REDMINE_KEY, ldap_server, 
+    ldap_root_dn, ldap_employees_dn, ldap_root_pw, smtp_server, smtp_port,
+    admin_mailbox, admin_mailbox_pw):
+
+    # clean file
+    open('settings.py', 'w').close()
+
+    with open('settings.py', 'a') as the_file:
+        the_file.write("mail_domain = '%s'\n" % mail_domain)
+        the_file.write("REDMINE_URL = '%s'\n" % REDMINE_URL)
+        the_file.write("REDMINE_KEY = '%s'\n" % REDMINE_KEY)
+        the_file.write("ldap_server = '%s'\n" % ldap_server)
+        the_file.write("ldap_root_dn = '%s'\n" % ldap_root_dn)
+        the_file.write("ldap_root_pw = " + '"' + ldap_root_pw + '"' + '\n')
+        the_file.write("ldap_employees_dn = '%s'\n" % ldap_employees_dn)
+        the_file.write("smtp_server = '%s'\n" % smtp_server)
+        the_file.write("smtp_port = %d\n" % int(smtp_port))
+        the_file.write("admin_mailbox = '%s'\n" % admin_mailbox)
+        the_file.write("admin_mailbox_pw = '%s'" % admin_mailbox_pw)
+
+
 root = tk.Tk()
 root.resizable(0,0)
+
+#root.style = ttk.Style()
+# ('clam', 'alt', 'default', 'classic')
+#root.style.theme_use("clam")
+
 # main window
 root.title("LDAP Adder")
 # app icon
-#img = tk.PhotoImage(file='ldap_adder.gif')
-#root.tk.call('wm', 'iconphoto', root._w, img)
-
+logo = tk.PhotoImage(file='ldap_adder.gif')
+root.tk.call('wm', 'iconphoto', root._w, logo)
+root.focus_set()
+#root.grab_set()
 
 label(root, 0, 0, 'First name')
 var0 = entry(root, 0, 1)
@@ -306,10 +452,10 @@ options = [
 
 label(root, 7, 0, 'Employee type')
 var7 = tk.StringVar(root)
-var7.set(options[0]) # default value
 
 w = apply(tk.OptionMenu, (root, var7) + tuple(options))
-w.grid(row=7,column=1, sticky="ew")
+w.grid(row=7,column=1, sticky="ew", padx=4, pady=1)
+var7.set(options[2]) # default value
 
 label(root, 8, 0, 'Skype')
 var8 = entry(root, 8, 1)
@@ -325,9 +471,9 @@ left_outer = tk.Frame(root, bd=2)
 left_outer.grid(row=10,column=1)
 left = tk.Frame(left_outer, bd=2, relief=tk.RIDGE)
 left.grid(row=10,column=1)
-#
 
-var10 = text_field_w_scroll(left, 34, 5, "ssh-rsa key", 10, 1, 2)
+
+var10 = text_field_w_scroll(left, 39, 5, "ssh-rsa key", 10, 1, 2)
 
 label(root, 11, 0, 'POSIX UID')
 var11 = entry(root, 11, 1)
@@ -338,6 +484,20 @@ var11 = entry(root, 11, 1)
 label(root, 13, 0, '')
 
 button(root, 14, 0, 'Show', show_ldif)
-button(root, 14, 1, 'Quit', root.quit)
+button(root, 14, 1, 'Close', root.quit)
+
+# Menu
+menu = tk.Menu(root)
+root.config(menu=menu)
+ 
+fm = tk.Menu(menu, tearoff=0)
+menu.add_cascade(label="Settings",menu=fm)
+fm.add_command(label="Preferances",command=settings_window)
+ 
+hm = tk.Menu(menu, tearoff=0)
+menu.add_cascade(label="Help",menu=hm)
+hm.add_command(label="About", command=about_window)
+hm.add_command(label="Exit",command=root.quit)
+#
 
 tk.mainloop()
