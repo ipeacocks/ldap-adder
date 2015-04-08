@@ -72,7 +72,6 @@ def show_ldif():
     sn = var1.get()
     country = var2.get()
     location = var3.get()
-    #address = var4.get()
     accessible_host = var5.get()
     organization = var6.get()
     employeetype = var7.get()
@@ -81,72 +80,92 @@ def show_ldif():
     ssh_key = var10.get("1.0", tk.END)
     # fixme: why new line in the end of text widget?
     ssh_key = ssh_key.rstrip('\n')
-    password = random_password(8)
-    cn = givenname[0].lower() + sn.lower()
-    email = cn + '@' + settings.mail_domain   
+    password = random_password(8)   
     uidnumber = var11.get()
 
-    ctx = sha.new(password) 
-    hash = "{SHA}" + b64encode(ctx.digest())
+    if givenname == "":
+        tkMessageBox.showerror("Error", "First name is not correct!")
+    elif sn == "":
+        tkMessageBox.showerror("Error", "Second name is not correct!")
+    elif country == "":
+        tkMessageBox.showerror("Error", "Country is not correct!")
+    elif location == "":
+        tkMessageBox.showerror("Error", "City is not correct!")
+    elif accessible_host == "":
+        tkMessageBox.showerror("Error", "Accessible Host is not correct!")
+    elif organization == "":
+        tkMessageBox.showerror("Error", "Organization is not correct!")
+    elif employeetype == "":
+        tkMessageBox.showerror("Error", "Employee type is not correct!") 
+    elif skype == "":
+        tkMessageBox.showerror("Error", "Skype is not correct!") 
+    elif phone == "":
+        tkMessageBox.showerror("Error", "Phone is not correct!") 
+    elif ssh_key == "":
+        tkMessageBox.showerror("Error", "SSH Key is not correct!") 
+    elif uidnumber == "":
+        tkMessageBox.showerror("Error", "UID is not correct!") 
+    else:
+        cn = givenname[0].lower() + sn.lower()
+        email = cn + '@' + settings.mail_domain
+        password = random_password(8)
+        ctx = sha.new(password) 
+        hash = "{SHA}" + b64encode(ctx.digest())
+
+        # ldif is import format for openLDAP
+        ldif_list =[]
+        ldif_list.append(("dn: cn=%s," % cn) + settings.ldap_employees_dn + "\n")
+        ldif_list.append('c: %s\n'% country)
+        ldif_list.append('cn: %s\n'% cn)
+        ldif_list.append('employeetype: %s\n' % employeetype)
+        ldif_list.append('gidnumber: 500\n')
+        ldif_list.append('givenname: %s\n' % givenname)
+        ldif_list.append('homedirectory: /home/%s\n' % cn)
+        ldif_list.append('host: %s\n' % accessible_host)
+        ldif_list.append('l: %s\n' % location)
+        ldif_list.append('loginshell: /bin/bash\n')
+        ldif_list.append('mail: %s\n' % email)
+        ldif_list.append('o: %s\n' % organization)
+        ldif_list.append(('objectclass: inetOrgPerson\n'
+                          'objectclass: posixAccount\n'
+                          'objectclass: top\n'
+                          'objectclass: shadowAccount\n'
+                          'objectclass: ldapPublicKey\n'
+                          'objectclass: extensibleObject\n'))
+        ldif_list.append('labeleduri: skype://%s\n' % skype)
+        ldif_list.append('sn: %s\n' % sn)
+        ldif_list.append('sshpublickey: %s\n' % ssh_key)
+        #ldif_list.append('st: %s\n' % (address))
+        ldif_list.append('telephonenumber: %s\n' % phone)
+        ldif_list.append('uid: %s\n' % (cn))
+        ldif_list.append('uidnumber: %s\n' % uidnumber)
+        ldif_list.append('userpassword: %s' % hash)
+
+        ldif = ''.join(ldif_list)
+
+        top = tk.Toplevel(root)
+        top.title("Result")
+        top.resizable(0,0)
+        top.focus_set()                                                        
+        top.grab_set()
+
+        top.tk.call('wm', 'iconphoto', top._w, logo)
+
+        ldif_text = text_field_w_scroll(top, 55, 27, ldif, 0, 0, 2, 2)
+
+        var13 = tk.IntVar()
+        check_box(top, 2, 0, "Send welcome mail", var13)
+        var14 = entry(top, 2, 1, "example@mail.ru", width=28)
+        var15 = tk.IntVar()
+        check_box(top, 1, 0, "Create Redmine account", var15, 2)
+        label(top, 3, 0, '')
 
 
-    # ldif is import format for openLDAP
-    ldif_list =[]
-    ldif_list.append(("dn: cn=%s," % cn) + settings.ldap_employees_dn + "\n")
-    ldif_list.append('c: %s\n'% country)
-    ldif_list.append('cn: %s\n'% cn)
-    ldif_list.append('employeetype: %s\n' % employeetype)
-    ldif_list.append('gidnumber: 500\n')
-    ldif_list.append('givenname: %s\n' % givenname)
-    ldif_list.append('homedirectory: /home/%s\n' % cn)
-    ldif_list.append('host: %s\n' % accessible_host)
-    ldif_list.append('l: %s\n' % location)
-    ldif_list.append('loginshell: /bin/bash\n')
-    ldif_list.append('mail: %s\n' % email)
-    ldif_list.append('o: %s\n' % organization)
-    ldif_list.append(('objectclass: inetOrgPerson\n'
-                      'objectclass: posixAccount\n'
-                      'objectclass: top\n'
-                      'objectclass: shadowAccount\n'
-                      'objectclass: ldapPublicKey\n'
-                      'objectclass: extensibleObject\n'))
-    ldif_list.append('labeleduri: skype://%s\n' % skype)
-    ldif_list.append('sn: %s\n' % sn)
-    ldif_list.append('sshpublickey: %s\n' % ssh_key)
-    #ldif_list.append('st: %s\n' % (address))
-    ldif_list.append('telephonenumber: %s\n' % phone)
-    ldif_list.append('uid: %s\n' % (cn))
-    ldif_list.append('uidnumber: %s\n' % uidnumber)
-    ldif_list.append('userpassword: %s' % hash)
-
-    ldif = ''.join(ldif_list)
-
-    top = tk.Toplevel(root)
-    top.title("Result")
-    top.resizable(0,0)
-    top.focus_set()                                                        
-    top.grab_set()
-
-    #logo = tk.PhotoImage(file="ldap_adder.gif")
-    top.tk.call('wm', 'iconphoto', top._w, logo)
-
-    #text_field_w_scroll(root, width, height, text, row, column, column_scroll, columnspan=1)
-    ldif_text = text_field_w_scroll(top, 55, 27, ldif, 0, 0, 2, 2)
-
-    var13 = tk.IntVar()
-    check_box(top, 2, 0, "Send welcome mail", var13)
-    var14 = entry(top, 2, 1, "example@mail.ru", width=28)
-    var15 = tk.IntVar()
-    check_box(top, 1, 0, "Create Redmine account", var15, 2)
-    label(top, 3, 0, '')
-
-
-    # http://stackoverflow.com/questions/6920302/passing-argument-in-python-tkinter-button-command
-    button(top, 4, 0, "Copy to Clipboard", lambda: copy_ldif(ldif_text), sticky="w")
-    button(top, 4, 1, "Import", lambda: yes_no(ldif_text, var13, 
-           var15, var14, skype, cn, givenname, sn, employeetype,
-           organization, location, email, password), columnspan=2)
-
+        # http://stackoverflow.com/questions/6920302/passing-argument-in-python-tkinter-button-command
+        button(top, 4, 0, "Copy to Clipboard", lambda: copy_ldif(ldif_text), sticky="w")
+        button(top, 4, 1, "Import", lambda: yes_no(ldif_text, var13, 
+               var15, var14, skype, cn, givenname, sn, employeetype,
+               organization, location, email, password), columnspan=2)
 
 
 def copy_ldif(text_object):
@@ -271,7 +290,6 @@ def about_window():
     top2.focus_set()                                                        
     top2.grab_set() 
 
-    #logo = tk.PhotoImage(file="ldap_adder.gif")
     top2.tk.call('wm', 'iconphoto', top2._w, logo)
 
     explanation = """This program is for easy creating accounts 
@@ -359,8 +377,6 @@ def settings_window():
 
     label(top3, 11, 0, ' ')
 
-    #B.grid(row=row, column=column, sticky=sticky, padx=8, pady=8, columnspan=columnspan)
-
     button(top3, 12, 0, 'Apply', lambda: save_settings(variable11.get(),variable1.get(),variable2.get(),
                                         variable3.get(),variable4.get(),variable5.get(),variable6.get(),
                                         variable7.get(),variable8.get(),variable9.get(),variable10.get()), sticky="w")
@@ -400,8 +416,7 @@ root.title("LDAP Adder")
 # app icon
 logo = tk.PhotoImage(file='ldap_adder.gif')
 root.tk.call('wm', 'iconphoto', root._w, logo)
-root.focus_set()
-root.grab_set()
+
 
 label(root, 0, 0, 'First name')
 var0 = entry(root, 0, 1)
@@ -415,15 +430,11 @@ var2 = entry(root, 2, 1)
 label(root, 3, 0, 'City')
 var3 = entry(root, 3, 1)
 
-#label(4, 0, 'Address')
-#var4 = entry(4, 1)
-
 label(root, 5, 0, 'Accessible Host')
 var5 = entry(root, 5, 1, "example.com")
 
 label(root, 6, 0, 'Organization')
 var6 = entry(root, 6, 1, "Company")
-
 
 options = [
     "Top management",
