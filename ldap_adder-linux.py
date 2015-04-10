@@ -30,6 +30,7 @@ import warnings
 # setting: addresses, servers and so on
 # local file
 import settings
+import re
 
 
 def label(root, row, column, text):
@@ -68,26 +69,36 @@ def text_field_w_scroll(root, width, height, text, row, column, column_scroll, c
 
 def show_ldif():
 
-    givenname = var0.get()
-    sn = var1.get()
-    country = var2.get()
-    location = var3.get()
-    accessible_host = var5.get()
-    organization = var6.get()
+    givenname = var0.get().strip()
+    sn = var1.get().strip()
+    country = var2.get().strip()
+    location = var3.get().strip()
+    accessible_host = var5.get().strip()
+    organization = var6.get().strip()
     employeetype = var7.get()
-    skype = var8.get()
-    phone = var9.get()
-    ssh_key = var10.get("1.0", tk.END)
+    skype = var8.get().strip()
+    phone = var9.get().strip()
+    ssh_key = var10.get("1.0", tk.END).strip()
     # fixme: why new line in the end of text widget?
-    ssh_key = ssh_key.rstrip('\n')
+    ssh_key = ssh_key.strip()
     password = random_password(8)   
-    uidnumber = var11.get()
+    uidnumber = var11.get().strip()
+
+    """
+    # main window
+    Country - 2 letters
+    Accessible host - with dots
+    POSIX UID - should be digit
+
+    # result
+    Send welcome mail
+    """
 
     if givenname == "":
         tkMessageBox.showerror("Error", "First name is not correct!")
-    elif sn == "":
-        tkMessageBox.showerror("Error", "Second name is not correct!")
-    elif country == "":
+    elif not re.match("^[A-Z]+[a-z]{1,}$", sn):
+        tkMessageBox.showerror("Error", "Second name is not correct!\nUse first uppercase letter")
+    elif not re.match("[A-Z]{2}$", country):
         tkMessageBox.showerror("Error", "Country is not correct!")
     elif location == "":
         tkMessageBox.showerror("Error", "City is not correct!")
@@ -95,16 +106,14 @@ def show_ldif():
         tkMessageBox.showerror("Error", "Accessible Host is not correct!")
     elif organization == "":
         tkMessageBox.showerror("Error", "Organization is not correct!")
-    elif employeetype == "":
-        tkMessageBox.showerror("Error", "Employee type is not correct!") 
     elif skype == "":
-        tkMessageBox.showerror("Error", "Skype is not correct!") 
-    elif phone == "":
-        tkMessageBox.showerror("Error", "Phone is not correct!") 
+        tkMessageBox.showerror("Error", "Skype can't be empty") 
+    elif not re.match("^\+[0-9]{11,}$", phone):
+        tkMessageBox.showerror("Error", "Phone is not correct!\nUse international format.") 
     elif ssh_key == "":
         tkMessageBox.showerror("Error", "SSH Key is not correct!") 
-    elif uidnumber == "":
-        tkMessageBox.showerror("Error", "UID is not correct!") 
+    elif not re.match("^[0-9]{1,}$", uidnumber):
+        tkMessageBox.showerror("Error", "UID is not correct!\nUse digits only.") 
     else:
         cn = givenname[0].lower() + sn.lower()
         email = cn + '@' + settings.mail_domain
