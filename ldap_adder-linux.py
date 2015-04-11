@@ -87,15 +87,14 @@ def show_ldif():
     """
     # main window
     Country - 2 letters
-    Accessible host - with dots
     POSIX UID - should be digit
 
     # result
     Send welcome mail
     """
 
-    if givenname == "":
-        tkMessageBox.showerror("Error", "First name is not correct!")
+    if not re.match("^[A-Z]+[A-Za-z\s\-]{1,}$", givenname):
+        tkMessageBox.showerror("Error", "First name is not correct!\nUse first uppercase letter")
     elif not re.match("^[A-Z]+[a-z]{1,}$", sn):
         tkMessageBox.showerror("Error", "Second name is not correct!\nUse first uppercase letter")
     elif not re.match("[A-Z]{2}$", country):
