@@ -3,7 +3,7 @@
 import Tkinter as tk
 import tkMessageBox
 # themed tk
-# import ttk
+# import tk
 
 # for random password generation
 import random
@@ -31,6 +31,8 @@ import warnings
 # local file
 import settings
 
+import re
+
 
 def label(root, row, column, text):
     L = tk.Label(root, text=text, anchor='w',justify=tk.LEFT, width=16)
@@ -43,7 +45,7 @@ def button(root, row, column, text, command, columnspan=1, sticky="e"):
     B.grid(row=row, column=column, sticky=sticky, padx=8, pady=8, columnspan=columnspan)
 
 
-def entry(root, row, column, insert="", show="", width=37):
+def entry(root, row, column, insert="", show="", width=32):
     E = tk.Entry(root, width=width)
     E.insert(0, insert)
     E.config(show=show)
@@ -68,85 +70,112 @@ def text_field_w_scroll(root, width, height, text, row, column, column_scroll, c
 
 def show_ldif():
 
-    givenname = var0.get()
-    sn = var1.get()
-    country = var2.get()
-    location = var3.get()
-    #address = var4.get()
-    accessible_host = var5.get()
-    organization = var6.get()
+    givenname = var0.get().strip()
+    sn = var1.get().strip()
+    country = var2.get().strip()
+    location = var3.get().strip()
+    accessible_host = var5.get().strip()
+    organization = var6.get().strip()
     employeetype = var7.get()
-    skype = var8.get()
-    phone = var9.get()
-    ssh_key = var10.get("1.0", tk.END)
+    skype = var8.get().strip()
+    phone = var9.get().strip()
+    ssh_key = var10.get("1.0", tk.END).strip()
     # fixme: why new line in the end of text widget?
-    ssh_key = ssh_key.rstrip('\n')
-    password = random_password(8)
-    cn = givenname[0].lower() + sn.lower()
-    email = cn + '@' + settings.mail_domain   
-    uidnumber = var11.get()
+    ssh_key = ssh_key.strip()
+    password = random_password(8)   
+    uidnumber = var11.get().strip()
 
-    ctx = sha.new(password) 
-    hash = "{SHA}" + b64encode(ctx.digest())
+    """
+    # main window
+    Country - 2 letters
+    POSIX UID - should be digit
+
+    # result
+    Send welcome mail
+    """
+
+    if not re.match("^[A-Za-z\s\-]{2,}$", givenname):
+        tkMessageBox.showerror("Error", "First name is not correct!")
+    elif not re.match("^[A-Za-z\-]{2,}$", sn):
+        tkMessageBox.showerror("Error", "Second name is not correct!")
+    elif not re.match("^[A-Z]{2}$", country):
+        tkMessageBox.showerror("Error", "Country is not correct!\nShould be 2 capital letters.")
+    elif not re.match("^\w{2,}$", location):
+        tkMessageBox.showerror("Error", "City is not correct!")
+    # can be IP or hostname
+    elif not re.match("^[a-z0-9]{1,}\.[a-z]{2,}$|^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$", accessible_host):
+        tkMessageBox.showerror("Error", "Accessible Host is not correct!")
+    elif organization == "":
+        tkMessageBox.showerror("Error", "Organization is not correct!")
+    elif skype == "":
+        tkMessageBox.showerror("Error", "Skype can't be empty") 
+    elif not re.match("^\+[0-9]{11,}$", phone):
+        tkMessageBox.showerror("Error", "Phone is not correct!\nUse international format.") 
+    elif ssh_key == "":
+        tkMessageBox.showerror("Error", "SSH Key is not correct!") 
+    elif not re.match("^[0-9]{4,}$", uidnumber):
+        tkMessageBox.showerror("Error", "UID is not correct!\nUse digits only.") 
+    else:
+        cn = givenname[0].lower() + sn.lower()
+        email = cn + '@' + settings.mail_domain
+        password = random_password(8)
+        ctx = sha.new(password) 
+        hash = "{SHA}" + b64encode(ctx.digest())
+
+        # ldif is import format for openLDAP
+        ldif_list =[]
+        ldif_list.append(("dn: cn=%s," % cn) + settings.ldap_employees_dn + "\n")
+        ldif_list.append('c: %s\n'% country)
+        ldif_list.append('cn: %s\n'% cn)
+        ldif_list.append('employeetype: %s\n' % employeetype)
+        ldif_list.append('gidnumber: 500\n')
+        ldif_list.append('givenname: %s\n' % givenname)
+        ldif_list.append('homedirectory: /home/%s\n' % cn)
+        ldif_list.append('host: %s\n' % accessible_host)
+        ldif_list.append('l: %s\n' % location)
+        ldif_list.append('loginshell: /bin/bash\n')
+        ldif_list.append('mail: %s\n' % email)
+        ldif_list.append('o: %s\n' % organization)
+        ldif_list.append(('objectclass: inetOrgPerson\n'
+                          'objectclass: posixAccount\n'
+                          'objectclass: top\n'
+                          'objectclass: shadowAccount\n'
+                          'objectclass: ldapPublicKey\n'
+                          'objectclass: extensibleObject\n'))
+        ldif_list.append('labeleduri: skype://%s\n' % skype)
+        ldif_list.append('sn: %s\n' % sn)
+        ldif_list.append('sshpublickey: %s\n' % ssh_key)
+        #ldif_list.append('st: %s\n' % (address))
+        ldif_list.append('telephonenumber: %s\n' % phone)
+        ldif_list.append('uid: %s\n' % (cn))
+        ldif_list.append('uidnumber: %s\n' % uidnumber)
+        ldif_list.append('userpassword: %s' % hash)
+
+        ldif = ''.join(ldif_list)
+
+        top = tk.Toplevel(root)
+        top.title("Result")
+        top.resizable(0,0)
+        top.focus_set()                                                        
+        top.grab_set()
+
+        top.tk.call('wm', 'iconphoto', top._w, logo)
+
+        ldif_text = text_field_w_scroll(top, 57, 27, ldif, 0, 0, 2, 2)
+
+        var13 = tk.IntVar()
+        check_box(top, 2, 0, "Send welcome mail", var13)
+        var14 = entry(top, 2, 1, "address", width=28)
+        var15 = tk.IntVar()
+        check_box(top, 1, 0, "Create Redmine account", var15, 2)
+        label(top, 3, 0, '')
 
 
-    # ldif is import format for openLDAP
-    ldif_list =[]
-    ldif_list.append(("dn: cn=%s," % cn) + settings.ldap_employees_dn + "\n")
-    ldif_list.append('c: %s\n'% country)
-    ldif_list.append('cn: %s\n'% cn)
-    ldif_list.append('employeetype: %s\n' % employeetype)
-    ldif_list.append('gidnumber: 500\n')
-    ldif_list.append('givenname: %s\n' % givenname)
-    ldif_list.append('homedirectory: /home/%s\n' % cn)
-    ldif_list.append('host: %s\n' % accessible_host)
-    ldif_list.append('l: %s\n' % location)
-    ldif_list.append('loginshell: /bin/bash\n')
-    ldif_list.append('mail: %s\n' % email)
-    ldif_list.append('o: %s\n' % organization)
-    ldif_list.append(('objectclass: inetOrgPerson\n'
-                      'objectclass: posixAccount\n'
-                      'objectclass: top\n'
-                      'objectclass: shadowAccount\n'
-                      'objectclass: ldapPublicKey\n'
-                      'objectclass: extensibleObject\n'))
-    ldif_list.append('labeleduri: skype://%s\n' % skype)
-    ldif_list.append('sn: %s\n' % sn)
-    ldif_list.append('sshpublickey: %s\n' % ssh_key)
-    #ldif_list.append('st: %s\n' % (address))
-    ldif_list.append('telephonenumber: %s\n' % phone)
-    ldif_list.append('uid: %s\n' % (cn))
-    ldif_list.append('uidnumber: %s\n' % uidnumber)
-    ldif_list.append('userpassword: %s' % hash)
-
-    ldif = ''.join(ldif_list)
-
-    top = tk.Toplevel(root)
-    top.title("Result")
-    top.resizable(0,0)
-    top.focus_set()                                                        
-    top.grab_set()
-
-    #logo = tk.PhotoImage(file="ldap_adder.gif")
-    top.tk.call('wm', 'iconphoto', top._w, logo)
-
-    #text_field_w_scroll(root, width, height, text, row, column, column_scroll, columnspan=1)
-    ldif_text = text_field_w_scroll(top, 57, 27, ldif, 0, 0, 2, 2)
-
-    var13 = tk.IntVar()
-    check_box(top, 2, 0, "Send welcome mail", var13)
-    var14 = entry(top, 2, 1, "example@mail.ru", width=28)
-    var15 = tk.IntVar()
-    check_box(top, 1, 0, "Create Redmine account", var15, 2)
-    label(top, 3, 0, '')
-
-
-    # http://stackoverflow.com/questions/6920302/passing-argument-in-python-tkinter-button-command
-    button(top, 4, 0, "Copy to Clipboard", lambda: copy_ldif(ldif_text), sticky="w")
-    button(top, 4, 1, "Import", lambda: yes_no(ldif_text, var13, 
-           var15, var14, skype, cn, givenname, sn, employeetype,
-           organization, location, email, password), columnspan=2)
-
+        # http://stackoverflow.com/questions/6920302/passing-argument-in-python-tkinter-button-command
+        button(top, 4, 0, "Copy to Clipboard", lambda: copy_ldif(ldif_text), sticky="w")
+        button(top, 4, 1, "Import", lambda: yes_no(ldif_text, var13, 
+               var15, var14, skype, cn, givenname, sn, employeetype,
+               organization, location, email, password), columnspan=2)
 
 
 def copy_ldif(text_object):
@@ -164,7 +193,7 @@ def yes_no(text_object, welcome_box_variable, redmine_box_variable,
 
     if tkMessageBox.askyesno(title = 'Attention', 
         message = 'Are you sure want to create new user on OpenLDAP/Redmine?', icon = 'warning'):
-        import_to_ldap(text_object)
+        #import_to_ldap(text_object)
 
         # checkbox status
         welcome_box = welcome_box_variable.get()
@@ -172,14 +201,19 @@ def yes_no(text_object, welcome_box_variable, redmine_box_variable,
         personal_email = own_mail_variable.get()
 
         # if welcome_box is checked and mail is not null
-        if personal_email:
-            if welcome_box:
+        if welcome_box:
+            if re.match("^[A-Za-z0-9]+@[a-z0-9]+\.[a-z\.]+$", personal_email):
                 sent_mail(personal_email, givenname_variable, email_variable,
                           password_variable, cn_variable)
-            if redmine_box:
-                create_redmine(cn_variable, password_variable, givenname_variable,
-                               sn_variable, email_variable, skype_variable,
-                               employeetype_variable, organization_variable, location_variable)
+            else:
+                tkMessageBox.showerror("Error", "Email is not correct!\nMessage was not sent.")
+
+        if redmine_box:
+            create_redmine(cn_variable, password_variable, givenname_variable,
+                           sn_variable, email_variable, skype_variable,
+                           employeetype_variable, organization_variable, location_variable)
+
+        import_to_ldap(text_object)
     else:
         root.quit
 
@@ -271,7 +305,6 @@ def about_window():
     top2.focus_set()                                                        
     top2.grab_set() 
 
-    #logo = tk.PhotoImage(file="ldap_adder.gif")
     top2.tk.call('wm', 'iconphoto', top2._w, logo)
 
     explanation = """This program is for easy creating accounts 
@@ -304,7 +337,7 @@ def settings_window():
     top3.grab_set() 
     
     # Redmine
-    group1 = tk.LabelFrame(top3, text="Redmine", padx=5, pady=5)
+    group1 = tk.LabelFrame(top3, text="Redmine settings", padx=5, pady=5)
     group1.grid(row=0, column=0, padx=4, pady=4, sticky="we",columnspan=2)
 
     label(group1, 0, 0, 'URL')
@@ -315,7 +348,7 @@ def settings_window():
     #
 
     # LDAP
-    group2 = tk.LabelFrame(top3, text="OpenLDAP", padx=5, pady=5)
+    group2 = tk.LabelFrame(top3, text="OpenLDAP settings", padx=5, pady=5)
     group2.grid(row=2, column=0, padx=4, pady=4, sticky="we",columnspan=2)
 
     label(group2, 2, 0, 'LDAP URL')
@@ -332,7 +365,7 @@ def settings_window():
     #
 
     # SMTP
-    group3 = tk.LabelFrame(top3, text="SMTP", padx=5, pady=5)
+    group3 = tk.LabelFrame(top3, text="SMTP settings", padx=5, pady=5)
     group3.grid(row=6, column=0, padx=4, pady=4, sticky="we",columnspan=2)
 
     label(group3, 6, 0, 'Server')
@@ -358,8 +391,6 @@ def settings_window():
 
 
     label(top3, 11, 0, ' ')
-
-    #B.grid(row=row, column=column, sticky=sticky, padx=8, pady=8, columnspan=columnspan)
 
     button(top3, 12, 0, 'Apply', lambda: save_settings(variable11.get(),variable1.get(),variable2.get(),
                                         variable3.get(),variable4.get(),variable5.get(),variable6.get(),
@@ -391,7 +422,7 @@ def save_settings(mail_domain, REDMINE_URL, REDMINE_KEY, ldap_server,
 root = tk.Tk()
 root.resizable(0,0)
 
-#root.style = ttk.Style()
+#root.style = tk.Style()
 # ('clam', 'alt', 'default', 'classic')
 #root.style.theme_use("clam")
 
@@ -400,8 +431,7 @@ root.title("LDAP Adder")
 # app icon
 logo = tk.PhotoImage(file='ldap_adder.gif')
 root.tk.call('wm', 'iconphoto', root._w, logo)
-root.focus_set()
-#root.grab_set()
+
 
 label(root, 0, 0, 'First name')
 var0 = entry(root, 0, 1)
@@ -415,15 +445,11 @@ var2 = entry(root, 2, 1)
 label(root, 3, 0, 'City')
 var3 = entry(root, 3, 1)
 
-#label(4, 0, 'Address')
-#var4 = entry(4, 1)
-
 label(root, 5, 0, 'Accessible Host')
 var5 = entry(root, 5, 1, "example.com")
 
 label(root, 6, 0, 'Organization')
 var6 = entry(root, 6, 1, "Company")
-
 
 options = [
     "Top management",
@@ -471,9 +497,9 @@ left_outer = tk.Frame(root, bd=2)
 left_outer.grid(row=10,column=1)
 left = tk.Frame(left_outer, bd=2, relief=tk.RIDGE)
 left.grid(row=10,column=1)
+#
 
-
-var10 = text_field_w_scroll(left, 39, 5, "ssh-rsa key", 10, 1, 2)
+var10 = text_field_w_scroll(left, 34, 5, "ssh-rsa key", 10, 1, 2)
 
 label(root, 11, 0, 'POSIX UID')
 var11 = entry(root, 11, 1)

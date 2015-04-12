@@ -30,6 +30,7 @@ import warnings
 # setting: addresses, servers and so on
 # local file
 import settings
+
 import re
 
 
@@ -93,15 +94,16 @@ def show_ldif():
     Send welcome mail
     """
 
-    if not re.match("^[A-Z]+[A-Za-z\s\-]{1,}$", givenname):
-        tkMessageBox.showerror("Error", "First name is not correct!\nUse first uppercase letter")
-    elif not re.match("^[A-Z]+[a-z]{1,}$", sn):
-        tkMessageBox.showerror("Error", "Second name is not correct!\nUse first uppercase letter")
-    elif not re.match("[A-Z]{2}$", country):
-        tkMessageBox.showerror("Error", "Country is not correct!")
-    elif location == "":
+    if not re.match("^[A-Za-z\s\-]{2,}$", givenname):
+        tkMessageBox.showerror("Error", "First name is not correct!")
+    elif not re.match("^[A-Za-z\-]{2,}$", sn):
+        tkMessageBox.showerror("Error", "Second name is not correct!")
+    elif not re.match("^[A-Z]{2}$", country):
+        tkMessageBox.showerror("Error", "Country is not correct!\nShould be 2 capital letters.")
+    elif not re.match("^\w{2,}$", location):
         tkMessageBox.showerror("Error", "City is not correct!")
-    elif accessible_host == "":
+    # can be IP or hostname
+    elif not re.match("^[a-z0-9]{1,}\.[a-z]{2,}$|^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$", accessible_host):
         tkMessageBox.showerror("Error", "Accessible Host is not correct!")
     elif organization == "":
         tkMessageBox.showerror("Error", "Organization is not correct!")
@@ -111,7 +113,7 @@ def show_ldif():
         tkMessageBox.showerror("Error", "Phone is not correct!\nUse international format.") 
     elif ssh_key == "":
         tkMessageBox.showerror("Error", "SSH Key is not correct!") 
-    elif not re.match("^[0-9]{1,}$", uidnumber):
+    elif not re.match("^[0-9]{4,}$", uidnumber):
         tkMessageBox.showerror("Error", "UID is not correct!\nUse digits only.") 
     else:
         cn = givenname[0].lower() + sn.lower()
@@ -163,7 +165,7 @@ def show_ldif():
 
         var13 = tk.IntVar()
         check_box(top, 2, 0, "Send welcome mail", var13)
-        var14 = entry(top, 2, 1, "example@mail.ru", width=28)
+        var14 = entry(top, 2, 1, "address", width=28)
         var15 = tk.IntVar()
         check_box(top, 1, 0, "Create Redmine account", var15, 2)
         label(top, 3, 0, '')
@@ -191,7 +193,7 @@ def yes_no(text_object, welcome_box_variable, redmine_box_variable,
 
     if tkMessageBox.askyesno(title = 'Attention', 
         message = 'Are you sure want to create new user on OpenLDAP/Redmine?', icon = 'warning'):
-        import_to_ldap(text_object)
+        #import_to_ldap(text_object)
 
         # checkbox status
         welcome_box = welcome_box_variable.get()
@@ -199,14 +201,19 @@ def yes_no(text_object, welcome_box_variable, redmine_box_variable,
         personal_email = own_mail_variable.get()
 
         # if welcome_box is checked and mail is not null
-        if personal_email:
-            if welcome_box:
+        if welcome_box:
+            if re.match("^[A-Za-z0-9]+@[a-z0-9]+\.[a-z\.]+$", personal_email):
                 sent_mail(personal_email, givenname_variable, email_variable,
                           password_variable, cn_variable)
-            if redmine_box:
-                create_redmine(cn_variable, password_variable, givenname_variable,
-                               sn_variable, email_variable, skype_variable,
-                               employeetype_variable, organization_variable, location_variable)
+            else:
+                tkMessageBox.showerror("Error", "Email is not correct!\nMessage was not sent.")
+
+        if redmine_box:
+            create_redmine(cn_variable, password_variable, givenname_variable,
+                           sn_variable, email_variable, skype_variable,
+                           employeetype_variable, organization_variable, location_variable)
+
+        import_to_ldap(text_object)
     else:
         root.quit
 
