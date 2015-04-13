@@ -191,31 +191,38 @@ def yes_no(text_object, welcome_box_variable, redmine_box_variable,
            sn_variable, employeetype_variable, organization_variable,
            location_variable, email_variable, password_variable):
 
-    if tkMessageBox.askyesno(title = 'Attention', 
-        message = 'Are you sure want to create new user on OpenLDAP/Redmine?', icon = 'warning'):
-        #import_to_ldap(text_object)
+  # checkbox status
+  welcome_box = welcome_box_variable.get()
+  redmine_box = redmine_box_variable.get()
+  personal_email = own_mail_variable.get()
 
-        # checkbox status
-        welcome_box = welcome_box_variable.get()
-        redmine_box = redmine_box_variable.get()
-        personal_email = own_mail_variable.get()
+  # if welcome_box is checked and mail is not null
+  if welcome_box:
+    if re.match("^[A-Za-z0-9]+@[a-z0-9]+\.[a-z\.]+$", personal_email):
 
-        # if welcome_box is checked and mail is not null
-        if welcome_box:
-            if re.match("^[A-Za-z0-9]+@[a-z0-9]+\.[a-z\.]+$", personal_email):
-                sent_mail(personal_email, givenname_variable, email_variable,
-                          password_variable, cn_variable)
-            else:
-                tkMessageBox.showerror("Error", "Email is not correct!\nMessage was not sent.")
-
-        if redmine_box:
-            create_redmine(cn_variable, password_variable, givenname_variable,
-                           sn_variable, email_variable, skype_variable,
-                           employeetype_variable, organization_variable, location_variable)
-
+      if tkMessageBox.askyesno(title = 'Attention', 
+                               message = 'Are you sure want to create new user on OpenLDAP/Redmine?', 
+                               icon = 'warning'):
         import_to_ldap(text_object)
-    else:
+
+        sent_mail(personal_email, givenname_variable, email_variable,
+                  password_variable, cn_variable)
+      else:
         root.quit
+    else:
+      tkMessageBox.showerror("Error", "Email is not correct!\nPlease edit.")
+  else:
+    if tkMessageBox.askyesno(title = 'Attention', 
+                             message = 'Are you sure want to create new user on OpenLDAP/Redmine?', 
+                             icon = 'warning'):
+      import_to_ldap(text_object)
+
+  if redmine_box:
+      create_redmine(cn_variable, password_variable, givenname_variable,
+                     sn_variable, email_variable, skype_variable,
+                     employeetype_variable, organization_variable, location_variable)
+
+
 
 def sent_mail(personal_email, givenname_variable, email_variable,
               password_variable, cn_variable):
