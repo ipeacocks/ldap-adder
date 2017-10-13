@@ -19,7 +19,7 @@ Before program launch you need to have some python libs. Read about that in requ
 And maybe setup before few packs from standard linux repos:
 
 ```bash
-# sudo apt-get install -y python-dev libldap2-dev libsasl2-dev libssl-dev
+# apt-get install -y python-dev libldap2-dev libsasl2-dev libssl-dev
 ```
 
 Program works in all OSes. Wrote on Python 2 and Tkinter lib. 
